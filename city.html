@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>City View</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page pagecity">
+    <div class="right-wall" id="city"><!-- CITY container --></div>
+  </div>
+
+  <!-- Note Popup -->
+  <div class="note-popup" id="notePopup">
+    <div class="note-box">
+      <span id="noteText"></span>
+    </div>
+  </div>
+
+  <script>
+    const city = document.getElementById('city');
+    const popup = document.getElementById('notePopup');
+    const popupText = document.getElementById('noteText');
+    const channel = new BroadcastChannel('dear-teacher');
+
+    // Listen for reset message from index.html
+    channel.addEventListener('message', (event) => {
+      if (event.data === 'reset') {
+        localStorage.removeItem('teacherNotes');
+        location.reload(); // Clear page
+        return;
+      }
+      spawnAsset(event.data);
+    });
+
+    // Load previously saved assets from localStorage
+    window.addEventListener('DOMContentLoaded', () => {
+      const stored = JSON.parse(localStorage.getItem('teacherNotes') || '[]');
+      stored.forEach(msg => spawnAsset(msg));
+    });
+
+    const cloudImgsLeft = ['clouds1.png', 'clouds2.png'];
+    const cloudImgsRight = ['clouds3.png', 'clouds4.png'];
+    const carImgs = ['car1.png', 'car3.PNG', 'car4.PNG', 'car5.PNG'];
+    const flagImgs = ['flag1.png', 'flag2.png', 'flag3.PNG', 'flag4.PNG'];
+    const shortHouseImgs = ['shorthouse.png', 'shorthouse2.png', 'shorthouse3.png', 'shorthouse4.PNG'];
+    const tallHouseImgs = ['tallhouse1.png', 'tallhouse2.PNG', 'tallhouse3.PNG', 'tallhouse4.PNG', 'tallhouse5.PNG', 'tallhouse6.PNG', 'tallhouse7.PNG', 'tallhouse8.PNG'];
+    const treeImgs = ['tree1.png', 'tree2.png', 'tree3.png', 'tree4.png', 'tree5.PNG', 'tree6.PNG', 'tree7.PNG', 'tree8.PNG', 'tree9.PNG'];
+    const schoolImgs = ['school1.png', 'school2.png', 'school3.PNG', 'school4.PNG'];
+    const signboardImgs = ['signboard1.png', 'signboard2.png', 'signboard3.PNG', 'signboard4.PNG'];
+    const sunImg = 'sun.PNG';
+    const planeImgs = ['plane1.png', 'plane2.png'];
+    const flowerImgs = ['flower1.png'];
+    const humanImgs = ['human.png'];
+    const monumentImgs = ['lgbtqmonument.PNG'];
+
+    let sunSpawned = false;
+    let cloudCounter = 0;
+    let planeCounter = 0;
+    let buildingCounter = 0;
+    let shortIndex = 0;
+    let tallIndex = 0;
+    let useTall = false;
+    let signboardIndex = 0;
+    let flowerIndex = 0;
+    let humanIndex = 0;
+    let monumentIndex = 0;
+    let cloudLayerToggle = true;
+
+    function spawnAsset(message) {
+      let type, src, direction;
+
+      if (!sunSpawned) {
+        type = 'sun';
+        src = 'assets/' + sunImg;
+        sunSpawned = true;
+      }
+      else if (Math.random() < 0.3) {
+        direction = (cloudCounter % 4 < 2) ? 'left' : 'right';
+        type = 'cloud';
+        src = 'assets/' + (direction === 'left' ? cloudImgsLeft[cloudCounter % cloudImgsLeft.length] : cloudImgsRight[cloudCounter % cloudImgsRight.length]);
+        cloudCounter++;
+        if (cloudCounter === 3 && planeCounter === 0) spawnPlane(planeCounter++, false, message);
+        else if (cloudCounter === 30 && planeCounter === 1) spawnPlane(planeCounter++, true, message);
+      }
+      else if (Math.random() < 0.1) {
+        type = 'flower';
+        src = 'assets/' + flowerImgs[flowerIndex++ % flowerImgs.length];
+      }
+      else if (Math.random() < 0.1) {
+        type = 'human';
+        src = 'assets/' + humanImgs[humanIndex++ % humanImgs.length];
+      }
+      else if (Math.random() < 0.05) {
+        type = 'monument';
+        src = 'assets/' + monumentImgs[monumentIndex++ % monumentImgs.length];
+      }
+      else if (Math.random() < 0.1) {
+        type = 'signboard';
+        src = 'assets/' + signboardImgs[signboardIndex++ % signboardImgs.length];
+      }
+      else if (Math.random() < 0.2) {
+        type = 'car';
+        src = 'assets/' + pick(carImgs);
+      }
+      else if (Math.random() < 0.3) {
+        type = 'tree';
+        src = 'assets/' + pick(treeImgs);
+      }
+      else if (Math.random() < 0.2) {
+        type = 'school';
+        src = 'assets/' + pick(schoolImgs);
+        buildingCounter++;
+      }
+      else {
+        type = 'house';
+        if (!useTall) {
+          src = 'assets/' + shortHouseImgs[shortIndex++];
+          if (shortIndex >= shortHouseImgs.length) {
+            useTall = true;
+            shortIndex = 0;
+          }
+        } else {
+          src = 'assets/' + tallHouseImgs[tallIndex++];
+          if (tallIndex >= tallHouseImgs.length) {
+            useTall = false;
+            tallIndex = 0;
+          }
+        }
+        buildingCounter++;
+      }
+
+      if (!src) return;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'asset-wrapper ' + type;
+      const img = document.createElement('img');
+      img.src = src;
+      img.className = 'asset-img';
+
+      if (type === 'sun') img.style.width = '200px';
+      wrapper.appendChild(img);
+
+      if (type === 'cloud') {
+        wrapper.style.left = '-150px';
+        const topPerc = cloudLayerToggle ? 8 + Math.random() * 2 : 14 + Math.random() * 2;
+        wrapper.style.top = `${topPerc}%`;
+        cloudLayerToggle = !cloudLayerToggle;
+      }
+      else if (type === 'car') {
+        wrapper.style.left = '-150px';
+        wrapper.style.bottom = '25px';
+      }
+      else if (type === 'sun') {
+        wrapper.style.left = '80%';
+        wrapper.style.top = '2%';
+      }
+      else {
+        wrapper.style.left = Math.random() * 90 + '%';
+        wrapper.style.bottom = '70px';
+      }
+
+      wrapper.addEventListener('mouseenter', () => {
+        const cleanText = message.trim();
+        popupText.innerHTML = /^Dear Teacher[,:]?/i.test(cleanText)
+          ? cleanText.replace(/\n/g, '<br>')
+          : `<strong>Dear Teacher,</strong><br>${cleanText.replace(/\n/g, '<br>')}`;
+        popup.style.display = 'block';
+      });
+      wrapper.addEventListener('mouseleave', () => popup.style.display = 'none');
+
+      city.appendChild(wrapper);
+
+      // Add flag every 10 buildings
+      if ((type === 'house' || type === 'school') && buildingCounter % 10 === 0) {
+        const flag = document.createElement('img');
+        flag.src = 'assets/' + pick(flagImgs);
+        flag.style.position = 'absolute';
+        flag.style.top = '-30px';
+        flag.style.width = '30px';
+        wrapper.appendChild(flag);
+      }
+    }
+
+    function spawnPlane(index, isAbove, message) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'asset-wrapper plane';
+      wrapper.style.left = '-200px';
+      wrapper.style.top = isAbove ? '8%' : '24%';
+      wrapper.style.zIndex = '3';
+      const planeImg = document.createElement('img');
+      planeImg.src = 'assets/' + planeImgs[index % planeImgs.length];
+      planeImg.className = 'asset-img';
+      wrapper.appendChild(planeImg);
+
+      wrapper.addEventListener('mouseenter', () => {
+        const cleanText = message.trim();
+        popupText.innerHTML = /^Dear Teacher[,:]?/i.test(cleanText)
+          ? cleanText.replace(/\n/g, '<br>')
+          : `<strong>Dear Teacher,</strong><br>${cleanText.replace(/\n/g, '<br>')}`;
+        popup.style.display = 'block';
+      });
+      wrapper.addEventListener('mouseleave', () => popup.style.display = 'none');
+
+      city.appendChild(wrapper);
+    }
+
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+  </script>
+</body>
+</html>

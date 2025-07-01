@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dear Teacher</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top-Left: Go to City -->
+  <a href="city.html" target="_blank" class="circle-btn" style="top: 10px; left: 10px;" title="City View"></a>
+
+  <!-- Top-Right: Download Notes -->
+  <button id="downloadBtn" class="circle-btn" style="top: 10px; right: 10px;" title="Download Notes"></button>
+
+  <!-- Bottom-Right: Reset Button -->
+  <button id="resetBtn" class="circle-btn" style="bottom: 10px; right: 10px;" title="Reset Page & City"></button>
+
+  <div class="page">
+    <div class="left-wall">
+      <div class="input-container">
+        <p class="prompt">Dear Teacher,</p>
+        <div id="userInput" contenteditable="true" class="input-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note-popup" id="notePopup">
+    <div class="note-box">
+      <span id="noteText"></span>
+    </div>
+  </div>
+
+  <script>
+    const channel = new BroadcastChannel('dear-teacher');
+    const userInput = document.getElementById('userInput');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const savedNotes = [];
+
+userInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const message = userInput.innerText.trim();
+    if (message) {
+      const finalNote = `Dear Teacher,\n${message}`;
+      channel.postMessage(finalNote);
+      savedNotes.push(finalNote);
+
+      // ✅ Save to localStorage
+      let stored = JSON.parse(localStorage.getItem('teacherNotes') || '[]');
+      stored.push(finalNote);
+      localStorage.setItem('teacherNotes', JSON.stringify(stored));
+
+      userInput.innerText = '';
+    }
+  }
+});
+
+    downloadBtn.addEventListener('click', () => {
+      if (savedNotes.length === 0) {
+        alert("No notes to save yet!");
+        return;
+      }
+
+      const blob = new Blob([savedNotes.join('\n\n')], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'teacher_notes.txt';
+      a.click();
+
+      URL.revokeObjectURL(url);
+    });
+
+    // 🔁 Reset everything including city.html
+    resetBtn.addEventListener('click', () => {
+      if (confirm("Reset everything? This will clear all notes and remove all assets from the city.")) {
+        localStorage.removeItem('savedAssets'); // Clear city state
+        channel.postMessage('reset');           // Notify city.html to reset itself
+        userInput.innerText = '';               // Clear input field
+        savedNotes.length = 0;                  // Clear notes array
+      }
+    });
+  </script>
+
+</body>
+</html>
